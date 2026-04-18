@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% block title %}MediBot — Assistant IA{% endblock %}
+{% block page_title %}MediBot{% endblock %}
+{% block page_subtitle %}Assistant intelligent propulsé par Claude AI{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chat-container {
+    display: flex; gap: 20px; height: calc(100vh - 180px); min-height: 500px;
+  }
+  .chat-sidebar {
+    width: 260px; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .chat-main {
+    flex: 1; display: flex; flex-direction: column;
+    background: white; border-radius: 16px; border: 1px solid #e5e7eb;
+    overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  }
+  .chat-header {
+    padding: 16px 20px; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, #0f172a, #1e1b4b);
+  }
+  .bot-avatar {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+    box-shadow: 0 4px 12px rgba(124,58,237,.4);
+  }
+  .bot-info h3 { color: white; font-size: 15px; font-weight: 600; }
+  .bot-status {
+    display: flex; align-items: center; gap: 5px; font-size: 12px; color: rgba(255,255,255,.6);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #10b981;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+
+  .message { display: flex; gap: 10px; max-width: 80%; }
+  .message.user { flex-direction: row-reverse; align-self: flex-end; }
+  .message.bot { align-self: flex-start; }
+  .msg-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .msg-avatar.bot { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; }
+  .msg-avatar.user { background: linear-gradient(135deg, #0A6EBD, #00C49A); color: white; font-weight: 700; }
+  .msg-bubble {
+    padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6;
+  }
+  .message.bot .msg-bubble {
+    background: #f3f4f6; color: #1f2937; border-bottom-left-radius: 4px;
+  }
+  .message.user .msg-bubble {
+    background: linear-gradient(135deg, #0A6EBD, #0e5ea0); color: white; border-bottom-right-radius: 4px;
+  }
+  .msg-time { font-size: 10px; opacity: .5; margin-top: 4px; text-align: right; }
+
+  .typing-indicator { display: flex; gap: 4px; padding: 14px 16px; background: #f3f4f6; border-radius: 14px; border-bottom-left-radius: 4px; align-items: center; }
+  .typing-dot { width: 7px; height: 7px; background: #9ca3af; border-radius: 50%; animation: typing 1.4s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: .2s; }
+  .typing-dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  .chat-input-zone {
+    padding: 16px 20px; border-top: 1px solid #e5e7eb;
+    background: #fafafa;
+  }
+  .chat-input-wrapper {
+    display: flex; gap: 10px; align-items: flex-end;
+  }
+  .chat-input {
+    flex: 1; border: 1.5px solid #e5e7eb; border-radius: 12px;
+    padding: 12px 16px; font-size: 14px; font-family: inherit; resize: none;
+    max-height: 120px; transition: border-color .2s;
+    outline: none; background: white;
+  }
+  .chat-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+  .btn-send {
+    width: 44px; height: 44px; border-radius: 12px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: white; font-size: 16px; transition: all .2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .btn-send:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(124,58,237,.4); }
+  .btn-send:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .quick-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .quick-btn {
+    padding: 6px 12px; border-radius: 20px; border: 1.5px solid #e5e7eb;
+    background: white; font-size: 12px; color: #6b7280; cursor: pointer; transition: all .2s;
+    font-family: inherit;
+  }
+  .quick-btn:hover { border-color: #7c3aed; color: #7c3aed; background: #ede9fe; }
+
+  .side-card {
+    background: white; border-radius: 14px; padding: 18px;
+    border: 1px solid #e5e7eb;
+  }
+  .side-card h4 { font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 12px; }
+  .disclaimer {
+    background: #fef3c7; border-radius: 10px; padding: 12px 14px;
+    font-size: 12px; color: #92400e; line-height: 1.5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+
+  <!-- SIDEBAR -->
+  <div class="chat-sidebar">
+    <div class="side-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;color:white;font-size:16px;">🤖</div>
+        <div>
+          <div style="font-weight:600;font-size:14px;">MediBot</div>
+          <div style="font-size:11px;color:#9ca3af;">Assistant IA Clinique</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6b7280;line-height:1.6;">MediBot répond à vos questions sur la santé, vous oriente vers la bonne spécialité et vous aide à préparer votre consultation.</p>
+    </div>
+
+    <div class="side-card">
+      <h4><i class="fas fa-bolt" style="color:#f59e0b;"></i> Questions rapides</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        {% for q in "Quelle est votre spécialité ?|Je veux prendre un RDV|Quels documents apporter ?|Horaires de la clinique|J'ai de la fièvre depuis 3 jours|Comment préparer une prise de sang ?".split:"|" %}
+        {% endfor %}
+        <button class="quick-btn" onclick="sendQuickMsg(this)">Quelle est votre spécialité ?</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">Quels documents apporter ?</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">J'ai de la fièvre, que faire ?</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">Comment prendre un RDV ?</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">Horaires de la clinique</button>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong><i class="fas fa-exclamation-triangle"></i> Important</strong><br>
+      MediBot fournit des informations générales. Il ne remplace pas l'avis d'un médecin. En cas d'urgence, appelez le <strong>15</strong>.
+    </div>
+
+    <a href="{% url 'analyse_symptomes' %}" class="btn btn-primary" style="width:100%;justify-content:center;background:linear-gradient(135deg,#0A6EBD,#00C49A);">
+      <i class="fas fa-stethoscope"></i> Analyser mes symptômes
+    </a>
+  </div>
+
+  <!-- CHAT PRINCIPAL -->
+  <div class="chat-main">
+    <div class="chat-header">
+      <div class="bot-avatar">🤖</div>
+      <div class="bot-info">
+        <h3>MediBot — Assistant IA</h3>
+        <div class="bot-status"><div class="status-dot"></div> En ligne — Propulsé par Claude AI</div>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <!-- Message de bienvenue -->
+      <div class="message bot">
+        <div class="msg-avatar bot"><i class="fas fa-robot"></i></div>
+        <div>
+          <div class="msg-bubble">
+            Bonjour <strong>{{ user.get_full_name }}</strong> ! 👋 Je suis <strong>MediBot</strong>, l'assistant intelligent de la Clinique Espoir.<br><br>
+            Je peux vous aider à :<br>
+            • Répondre à vos questions médicales générales<br>
+            • Vous orienter vers la bonne spécialité<br>
+            • Vous préparer pour votre consultation<br>
+            • Vous informer sur le fonctionnement de la clinique<br><br>
+            Comment puis-je vous aider aujourd'hui ?
+          </div>
+          <div class="msg-time">Maintenant</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-zone">
+      <div class="chat-input-wrapper">
+        <textarea
+          id="chatInput"
+          class="chat-input"
+          placeholder="Posez votre question à MediBot..."
+          rows="1"
+          onkeydown="handleKeyDown(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="sendQuickMsg(this)">💊 Médicaments</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">🩺 Spécialités</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">📋 Préparer ma consultation</button>
+        <button class="quick-btn" onclick="sendQuickMsg(this)">🚑 Urgences</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let conversationHistory = [];
+
+function getTime() {
+  return new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function addMessage(content, role) {
+  const container = document.getElementById('chatMessages');
+  const initials = '{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}';
+
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  const avatarContent = role === 'bot' ? '<i class="fas fa-robot"></i>' : initials;
+  div.innerHTML = `
+    <div class="msg-avatar ${role}">${avatarContent}</div>
+    <div>
+      <div class="msg-bubble">${content.replace(/\n/g, '<br>')}</div>
+      <div class="msg-time">${getTime()}</div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping() {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'message bot';
+  div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="msg-avatar bot"><i class="fas fa-robot"></i></div>
+    <div class="typing-indicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('sendBtn');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  btn.disabled = true;
+
+  addMessage(msg, 'user');
+  conversationHistory.push({role: 'user', content: msg});
+
+  showTyping();
+
+  try {
+    const response = await fetch('{% url "chatbot_api" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        message: msg,
+        messages: conversationHistory.slice(-10)
+      })
+    });
+    const data = await response.json();
+    removeTyping();
+
+    if (data.response) {
+      addMessage(data.response, 'bot');
+      conversationHistory.push({role: 'assistant', content: data.response});
+    } else {
+      addMessage("Désolé, une erreur s'est produite. Veuillez réessayer.", 'bot');
+    }
+  } catch(e) {
+    removeTyping();
+    addMessage("Erreur de connexion. Vérifiez votre connexion internet.", 'bot');
+  }
+
+  btn.disabled = false;
+  input.focus();
+}
+
+function sendQuickMsg(btn) {
+  const text = btn.textContent.replace(/[💊🩺📋🚑]/g, '').trim();
+  document.getElementById('chatInput').value = text;
+  sendMessage();
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+</script>
+{% endblock %}

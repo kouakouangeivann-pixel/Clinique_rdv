@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Mon Profil{% endblock %}
+{% block page_title %}Mon Profil{% endblock %}
+{% block page_subtitle %}Gérer vos informations personnelles et votre dossier médical{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-user-edit"></i> Informations personnelles</div>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="grid-2" style="gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom</label>
+            <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" value="{{ user.email }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <input type="tel" name="telephone" class="form-control" value="{{ user.telephone }}">
+        </div>
+        {% if user.is_patient and profil_patient %}
+        <hr style="border:none;border-top:1px solid var(--gray-200);margin:20px 0;">
+        <div style="font-size:14px;font-weight:600;color:var(--gray-800);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-file-medical" style="color:var(--primary);"></i> Dossier médical
+        </div>
+        <div class="grid-2" style="gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Date de naissance</label>
+            <input type="date" name="date_naissance" class="form-control" value="{{ profil_patient.date_naissance|date:'Y-m-d' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Groupe sanguin</label>
+            <select name="groupe_sanguin" class="form-control">
+              <option value="">Non renseigné</option>
+              <option value="A+" {% if profil_patient.groupe_sanguin == 'A+' %}selected{% endif %}>A+</option>
+              <option value="A-" {% if profil_patient.groupe_sanguin == 'A-' %}selected{% endif %}>A-</option>
+              <option value="B+" {% if profil_patient.groupe_sanguin == 'B+' %}selected{% endif %}>B+</option>
+              <option value="B-" {% if profil_patient.groupe_sanguin == 'B-' %}selected{% endif %}>B-</option>
+              <option value="AB+" {% if profil_patient.groupe_sanguin == 'AB+' %}selected{% endif %}>AB+</option>
+              <option value="AB-" {% if profil_patient.groupe_sanguin == 'AB-' %}selected{% endif %}>AB-</option>
+              <option value="O+" {% if profil_patient.groupe_sanguin == 'O+' %}selected{% endif %}>O+</option>
+              <option value="O-" {% if profil_patient.groupe_sanguin == 'O-' %}selected{% endif %}>O-</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Allergies connues</label>
+          <textarea name="allergies" class="form-control" rows="2" placeholder="Ex: Pénicilline, Aspirine...">{{ profil_patient.allergies }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Antécédents médicaux</label>
+          <textarea name="antecedents" class="form-control" rows="3" placeholder="Ex: Hypertension, diabète, chirurgies...">{{ profil_patient.antecedents }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Adresse</label>
+          <input type="text" name="adresse" class="form-control" value="{{ profil_patient.adresse }}">
+        </div>
+        <div class="grid-2" style="gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Contact d'urgence</label>
+            <input type="text" name="contact_urgence" class="form-control" placeholder="Nom" value="{{ profil_patient.contact_urgence }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tél. d'urgence</label>
+            <input type="tel" name="tel_urgence" class="form-control" placeholder="+225..." value="{{ profil_patient.tel_urgence }}">
+          </div>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;">
+          <i class="fas fa-save"></i> Enregistrer les modifications
+        </button>
+      </form>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="card" style="text-align:center;padding:32px 24px;">
+      <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#0A6EBD,#00C49A);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:28px;margin:0 auto 16px;">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+      <h3 style="font-size:18px;font-weight:600;margin-bottom:4px;">{{ user.get_full_name }}</h3>
+      <span class="badge badge-info" style="margin-bottom:14px;display:inline-block;">{{ user.get_role_display }}</span>
+      <div style="font-size:13px;color:var(--gray-400);line-height:2.2;text-align:left;">
+        <div><i class="fas fa-envelope" style="width:18px;color:var(--primary);"></i> {{ user.email|default:"—" }}</div>
+        <div><i class="fas fa-phone" style="width:18px;color:var(--primary);"></i> {{ user.telephone|default:"—" }}</div>
+        <div><i class="fas fa-calendar" style="width:18px;color:var(--primary);"></i> Membre depuis {{ user.date_joined|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+    {% if user.is_patient and profil_patient %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px;"><i class="fas fa-heartbeat" style="color:var(--danger);"></i> Résumé médical</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;padding:10px;background:var(--gray-50);border-radius:8px;">
+          <span style="color:var(--gray-400);">Groupe sanguin</span>
+          <strong style="color:var(--danger);">{{ profil_patient.groupe_sanguin|default:"—" }}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px;background:var(--gray-50);border-radius:8px;">
+          <span style="color:var(--gray-400);">Allergies</span>
+          <strong>{{ profil_patient.allergies|default:"Aucune"|truncatechars:25 }}</strong>
+        </div>
+        {% if profil_patient.date_naissance %}
+        <div style="display:flex;justify-content:space-between;padding:10px;background:var(--gray-50);border-radius:8px;">
+          <span style="color:var(--gray-400);">Naissance</span>
+          <strong>{{ profil_patient.date_naissance|date:"d/m/Y" }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div style="background:linear-gradient(135deg,#ede9fe,#f3e8ff);border:1.5px solid #c4b5fd;border-radius:var(--radius);padding:18px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="font-size:22px;">🤖</span>
+        <div>
+          <div style="font-weight:600;font-size:14px;color:#5b21b6;">Assistance IA disponible</div>
+          <div style="font-size:12px;color:#7c3aed;">Propulsé par Claude AI</div>
+        </div>
+      </div>
+      <a href="{% url 'chatbot' %}" class="btn btn-sm" style="width:100%;justify-content:center;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;margin-bottom:8px;"><i class="fas fa-robot"></i> Ouvrir MediBot</a>
+      <a href="{% url 'analyse_symptomes' %}" class="btn btn-sm btn-outline" style="width:100%;justify-content:center;"><i class="fas fa-stethoscope"></i> Analyser mes symptômes</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

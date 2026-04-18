@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Créer un compte{% endblock %}
+
+{% block public_content %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un compte — Clinique Espoir</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a1628,#0e2a52);padding:20px;}
+    .register-box{background:white;border-radius:20px;padding:40px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+    .logo{text-align:center;margin-bottom:28px;}
+    .logo i{font-size:40px;color:#0A6EBD;display:block;margin-bottom:8px;}
+    .logo h1{font-family:'Playfair Display',serif;font-size:24px;color:#1f2937;}
+    .logo p{font-size:13px;color:#9ca3af;}
+    .form-group{margin-bottom:16px;}
+    .form-label{display:block;font-size:13px;font-weight:500;color:#4b5563;margin-bottom:6px;}
+    .form-control{width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .2s;}
+    .form-control:focus{outline:none;border-color:#0A6EBD;box-shadow:0 0 0 3px rgba(10,110,189,.1);}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .btn-submit{width:100%;padding:13px;background:#0A6EBD;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;margin-top:8px;}
+    .btn-submit:hover{background:#084f8a;}
+    .auth-footer{text-align:center;margin-top:20px;font-size:14px;color:#6b7280;}
+    .auth-footer a{color:#0A6EBD;font-weight:500;text-decoration:none;}
+    .errorlist{list-style:none;color:#ef4444;font-size:12px;margin-top:4px;}
+  </style>
+</head>
+<body>
+<div class="register-box">
+  <div class="logo">
+    <i class="fas fa-heartbeat"></i>
+    <h1>Clinique Espoir</h1>
+    <p>Créer votre compte patient</p>
+  </div>
+
+  {% if messages %}{% for msg in messages %}
+  <div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;">{{ msg }}</div>
+  {% endfor %}{% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Prénom *</label>
+        <input type="text" name="first_name" class="form-control" placeholder="Votre prénom" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input type="text" name="last_name" class="form-control" placeholder="Votre nom" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nom d'utilisateur *</label>
+      <input type="text" name="username" class="form-control" placeholder="Choisissez un identifiant" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email *</label>
+      <input type="email" name="email" class="form-control" placeholder="votre@email.com" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Téléphone</label>
+      <input type="tel" name="telephone" class="form-control" placeholder="+225 07 00 00 00 00">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Mot de passe *</label>
+        <input type="password" name="password1" class="form-control" placeholder="Mot de passe" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmer *</label>
+        <input type="password" name="password2" class="form-control" placeholder="Confirmer" required>
+      </div>
+    </div>
+    {% if form.errors %}
+    <div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:12px;font-size:13px;margin-bottom:14px;">
+      {% for field in form %}{% for error in field.errors %}<div>{{ error }}</div>{% endfor %}{% endfor %}
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+    {% endif %}
+    <button type="submit" class="btn-submit"><i class="fas fa-user-plus"></i> Créer mon compte</button>
+  </form>
+
+  <div class="auth-footer">
+    Déjà inscrit ? <a href="{% url 'login' %}">Se connecter</a><br>
+    <a href="{% url 'home' %}" style="margin-top:6px;display:inline-block;"><i class="fas fa-arrow-left"></i> Accueil</a>
+  </div>
+</div>
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — Clinique Espoir</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh; display: flex;
+      background: linear-gradient(135deg, #0a1628 0%, #0e2a52 100%);
+    }
+    .auth-split { display: flex; width: 100%; }
+    .auth-left {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 60px; position: relative;
+    }
+    .auth-left::before {
+      content: ''; position: absolute; top: -100px; right: -100px;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,196,154,.12), transparent 70%);
+    }
+    .auth-left-content { color: white; max-width: 400px; z-index: 1; }
+    .auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
+    .logo-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, #00C49A, #0A6EBD);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: white; box-shadow: 0 6px 20px rgba(0,196,154,.4);
+    }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
+    .auth-left-content h1 { font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700; line-height: 1.15; margin-bottom: 18px; }
+    .auth-left-content h1 span { color: #00C49A; }
+    .auth-left-content p { font-size: 16px; color: rgba(255,255,255,.6); line-height: 1.7; margin-bottom: 36px; }
+    .auth-features { list-style: none; }
+    .auth-features li { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,.75); font-size: 14px; margin-bottom: 12px; }
+    .auth-features li i { color: #00C49A; width: 16px; }
+
+    .auth-right {
+      width: 440px; background: white;
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 40px;
+    }
+    .auth-form { width: 100%; }
+    .auth-form h2 { font-size: 26px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+    .auth-form p { font-size: 14px; color: #9ca3af; margin-bottom: 32px; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: #4b5563; margin-bottom: 8px; }
+    .input-wrapper { position: relative; }
+    .input-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: #9ca3af; font-size: 15px;
+    }
+    .form-control {
+      width: 100%; padding: 12px 14px 12px 42px;
+      border: 1.5px solid #e5e7eb; border-radius: 10px;
+      font-size: 14px; font-family: inherit; transition: all .2s; background: #fafafa;
+    }
+    .form-control:focus { outline: none; border-color: #0A6EBD; box-shadow: 0 0 0 3px rgba(10,110,189,.1); background: white; }
+
+    .btn-submit {
+      width: 100%; padding: 13px; background: #0A6EBD; color: white;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all .25s; font-family: inherit;
+      box-shadow: 0 4px 12px rgba(10,110,189,.3);
+    }
+    .btn-submit:hover { background: #084f8a; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(10,110,189,.4); }
+
+    .auth-footer { text-align: center; margin-top: 24px; font-size: 14px; color: #6b7280; }
+    .auth-footer a { color: #0A6EBD; font-weight: 500; text-decoration: none; }
+
+    .alert-error {
+      background: #fee2e2; color: #991b1b; border-radius: 10px;
+      padding: 12px 16px; font-size: 13px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .demo-creds {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 24px; font-size: 13px;
+    }
+    .demo-creds strong { color: #065f46; display: block; margin-bottom: 8px; }
+    .demo-creds code { background: white; padding: 2px 6px; border-radius: 4px; color: #0A6EBD; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="auth-split">
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <div class="auth-logo">
+        <div class="logo-icon"><i class="fas fa-heartbeat"></i></div>
+        <div class="logo-text">Clinique Espoir</div>
+      </div>
+      <h1>Bienvenue sur votre <span>espace santé</span></h1>
+      <p>Gérez vos rendez-vous médicaux facilement, bénéficiez de l'aide de notre assistant IA et consultez votre historique médical en toute sécurité.</p>
+      <ul class="auth-features">
+        <li><i class="fas fa-check-circle"></i> Prise de RDV en ligne 24h/24</li>
+        <li><i class="fas fa-check-circle"></i> Assistant IA pour vous orienter</li>
+        <li><i class="fas fa-check-circle"></i> Historique médical sécurisé</li>
+        <li><i class="fas fa-check-circle"></i> Notifications automatiques</li>
+        <li><i class="fas fa-check-circle"></i> Agenda médecin interactif</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-form">
+      <h2>Connexion</h2>
+      <p>Entrez vos identifiants pour accéder à votre espace</p>
+
+      <div class="demo-creds">
+        <strong><i class="fas fa-info-circle"></i> Comptes de démonstration :</strong>
+        Admin: <code>admin</code> / <code>admin123</code><br>
+        Médecin: <code>dr.konan</code> / <code>medecin123</code><br>
+        Patient: <code>patient1</code> / <code>patient123</code>
+      </div>
+
+      {% if messages %}
+      {% for msg in messages %}
+      <div class="alert-error"><i class="fas fa-exclamation-circle"></i>{{ msg }}</div>
+      {% endfor %}
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Nom d'utilisateur</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" name="username" class="form-control" placeholder="Votre nom d'utilisateur" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" name="password" class="form-control" placeholder="Votre mot de passe" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit"><i class="fas fa-sign-in-alt"></i> Se connecter</button>
+      </form>
+
+      <div class="auth-footer">
+        Pas encore de compte ? <a href="{% url 'register' %}">Créer un compte patient</a>
+      </div>
+      <div class="auth-footer" style="margin-top:8px;">
+        <a href="{% url 'home' %}"><i class="fas fa-arrow-left"></i> Retour à l'accueil</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

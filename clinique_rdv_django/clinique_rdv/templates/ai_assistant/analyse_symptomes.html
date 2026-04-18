@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% block title %}Analyse de Symptômes IA{% endblock %}
+{% block page_title %}Analyse de Symptômes{% endblock %}
+{% block page_subtitle %}L'IA analyse vos symptômes et vous oriente vers la bonne spécialité{% endblock %}
+
+{% block extra_css %}
+<style>
+  .analyse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .urgence-card {
+    border-radius: 14px; padding: 24px; display: none;
+    margin-bottom: 20px;
+  }
+  .urgence-rouge { background: #fee2e2; border: 2px solid #ef4444; }
+  .urgence-orange { background: #fef3c7; border: 2px solid #f59e0b; }
+  .urgence-bleu { background: #dbeafe; border: 2px solid #3b82f6; }
+  .urgence-vert { background: #d1fae5; border: 2px solid #10b981; }
+
+  .result-section { display: none; animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+  .conseil-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,.05); font-size: 14px;
+  }
+  .conseil-item:last-child { border-bottom: none; }
+  .conseil-item i { color: #0A6EBD; margin-top: 2px; flex-shrink: 0; }
+
+  .loader {
+    display: none; text-align: center; padding: 40px;
+  }
+  .loader-spinner {
+    width: 48px; height: 48px; border: 4px solid #e5e7eb;
+    border-top-color: #7c3aed; border-radius: 50%;
+    animation: spin 1s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .specialite-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 30px; font-size: 16px; font-weight: 700;
+    background: linear-gradient(135deg, #0A6EBD, #00C49A); color: white;
+    box-shadow: 0 4px 12px rgba(10,110,189,.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analyse-grid">
+
+  <!-- FORMULAIRE -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-stethoscope"></i> Décrire vos symptômes</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Vos symptômes *</label>
+        <textarea id="symptomesInput" class="form-control" rows="5"
+          placeholder="Décrivez vos symptômes en détail. Ex: J'ai mal à la tête depuis 2 jours, avec de la fièvre à 38.5°C et des courbatures..."></textarea>
+      </div>
+
+      <div class="grid-2" style="gap:14px;margin-bottom:18px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Âge (optionnel)</label>
+          <input type="number" id="ageInput" class="form-control" placeholder="Ex: 35" min="0" max="120">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Sexe (optionnel)</label>
+          <select id="sexeInput" class="form-control">
+            <option value="">Non précisé</option>
+            <option value="Masculin">Masculin</option>
+            <option value="Féminin">Féminin</option>
+          </select>
+        </div>
+      </div>
+
+      <button onclick="analyserSymptomes()" class="btn btn-primary" style="width:100%;justify-content:center;" id="analyseBtn">
+        <i class="fas fa-search"></i> Analyser avec l'IA
+      </button>
+
+      <p style="font-size:12px;color:#9ca3af;margin-top:12px;text-align:center;">
+        <i class="fas fa-shield-alt"></i> Cet outil ne remplace pas un diagnostic médical
+      </p>
+    </div>
+
+    <!-- DISCLAIMER -->
+    <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-top:16px;font-size:13px;color:#92400e;">
+      <strong><i class="fas fa-exclamation-triangle"></i> Avertissement médical</strong><br>
+      Cet outil d'orientation est fourni à titre informatif uniquement. En cas de symptômes graves ou d'urgence médicale, appelez le SAMU (<strong>15</strong>) ou rendez-vous aux urgences.
+    </div>
+  </div>
+
+  <!-- RÉSULTATS -->
+  <div>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+      <div class="loader-spinner"></div>
+      <p style="color:#7c3aed;font-weight:600;">L'IA analyse vos symptômes...</p>
+      <p style="font-size:13px;color:#9ca3af;margin-top:6px;">Cela peut prendre quelques secondes</p>
+    </div>
+
+    <!-- Résultats -->
+    <div class="result-section" id="resultSection">
+
+      <!-- Niveau urgence -->
+      <div id="urgenceCard" class="urgence-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span id="urgenceIcon" style="font-size:24px;"></span>
+          <div>
+            <div id="urgenceLabel" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.7;"></div>
+            <div id="urgenceMessage" style="font-size:15px;font-weight:600;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spécialité suggérée -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-user-md"></i> Spécialité recommandée</div>
+        </div>
+        <div style="text-align:center;padding:10px 0 20px;">
+          <span class="specialite-badge" id="specialiteBadge">
+            <i class="fas fa-stethoscope"></i>
+            <span id="specialiteText">—</span>
+          </span>
+        </div>
+        <a href="{% url 'prendre_rdv' %}" class="btn btn-accent" style="width:100%;justify-content:center;">
+          <i class="fas fa-calendar-plus"></i> Prendre un RDV maintenant
+        </a>
+      </div>
+
+      <!-- Conseils -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-lightbulb"></i> Conseils pour votre consultation</div>
+        </div>
+        <div id="conseilsList"></div>
+      </div>
+
+      <!-- Info générale -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-info-circle"></i> Information générale</div>
+        <p id="infoGenerale" style="font-size:14px;color:#4b5563;line-height:1.7;"></p>
+        <div id="disclaimerText" style="font-size:12px;color:#9ca3af;margin-top:12px;font-style:italic;"></div>
+      </div>
+    </div>
+
+    <!-- État initial -->
+    <div id="emptyState" class="card" style="text-align:center;padding:60px 20px;">
+      <div style="font-size:64px;margin-bottom:16px;">🩺</div>
+      <h3 style="font-size:18px;font-weight:600;margin-bottom:8px;color:#1f2937;">Analysez vos symptômes</h3>
+      <p style="color:#9ca3af;font-size:14px;max-width:300px;margin:0 auto;">
+        Décrivez vos symptômes et laissez l'IA vous orienter vers la spécialité médicale adaptée.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const urgenceConfig = {
+  'URGENCE': {
+    class: 'urgence-rouge',
+    icon: '🚨',
+    label: 'URGENCE MÉDICALE'
+  },
+  'RAPIDE': {
+    class: 'urgence-orange',
+    icon: '⚠️',
+    label: 'CONSULTATION RAPIDE (48h)'
+  },
+  'NORMAL': {
+    class: 'urgence-bleu',
+    icon: 'ℹ️',
+    label: 'CONSULTATION DANS LA SEMAINE'
+  },
+  'ROUTINE': {
+    class: 'urgence-vert',
+    icon: '✅',
+    label: 'CONSULTATION DE ROUTINE'
+  }
+};
+
+async function analyserSymptomes() {
+  const symptomes = document.getElementById('symptomesInput').value.trim();
+  if (!symptomes) {
+    alert('Veuillez décrire vos symptômes.');
+    return;
+  }
+
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  document.getElementById('loader').style.display = 'block';
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+
+  try {
+    const response = await fetch('{% url "analyse_symptomes_api" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        symptomes: symptomes,
+        age: document.getElementById('ageInput').value,
+        sexe: document.getElementById('sexeInput').value
+      })
+    });
+
+    const data = await response.json();
+    document.getElementById('loader').style.display = 'none';
+
+    if (data.success && data.analyse) {
+      afficherResultats(data.analyse);
+    } else {
+      alert(data.error || 'Erreur lors de l\'analyse.');
+      document.getElementById('emptyState').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    alert('Erreur de connexion.');
+  }
+
+  btn.disabled = false;
+}
+
+function afficherResultats(analyse) {
+  // Urgence
+  const urgence = analyse.urgence || 'NORMAL';
+  const config = urgenceConfig[urgence] || urgenceConfig['NORMAL'];
+  const urgenceCard = document.getElementById('urgenceCard');
+  urgenceCard.className = 'urgence-card ' + config.class;
+  urgenceCard.style.display = 'block';
+  document.getElementById('urgenceIcon').textContent = config.icon;
+  document.getElementById('urgenceLabel').textContent = config.label;
+  document.getElementById('urgenceMessage').textContent = analyse.message_urgence || '';
+
+  // Spécialité
+  document.getElementById('specialiteText').textContent = analyse.specialite || 'Médecine générale';
+
+  // Conseils
+  const conseilsList = document.getElementById('conseilsList');
+  conseilsList.innerHTML = '';
+  if (analyse.conseils && analyse.conseils.length) {
+    analyse.conseils.forEach(conseil => {
+      conseilsList.innerHTML += `
+        <div class="conseil-item">
+          <i class="fas fa-check-circle"></i>
+          <span>${conseil}</span>
+        </div>
+      `;
+    });
+  }
+
+  // Info générale
+  document.getElementById('infoGenerale').textContent = analyse.info_generale || '';
+  document.getElementById('disclaimerText').textContent = analyse.disclaimer || '';
+
+  document.getElementById('resultSection').style.display = 'block';
+}
+</script>
+{% endblock %}

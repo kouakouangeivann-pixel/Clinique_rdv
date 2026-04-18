@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% block title %}Prendre un Rendez-vous{% endblock %}
+{% block page_title %}Prendre un Rendez-vous{% endblock %}
+{% block page_subtitle %}Choisissez votre médecin et votre créneau{% endblock %}
+
+{% block extra_css %}
+<style>
+  .medecin-card {
+    border: 2px solid #e5e7eb; border-radius: 14px; padding: 20px;
+    cursor: pointer; transition: all .2s; position: relative;
+  }
+  .medecin-card:hover { border-color: #0A6EBD; box-shadow: 0 6px 20px rgba(10,110,189,.12); }
+  .medecin-card.selected { border-color: #0A6EBD; background: #e8f4fd; }
+  .medecin-card.selected::after {
+    content: '✓'; position: absolute; top: 14px; right: 14px;
+    width: 24px; height: 24px; background: #0A6EBD; color: white; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+  }
+  .medecin-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, #0A6EBD, #00C49A);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 18px; margin-bottom: 12px;
+  }
+  .creneaux-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px;
+    margin-top: 12px;
+  }
+  .creneau-btn {
+    padding: 8px; border-radius: 8px; border: 1.5px solid #e5e7eb;
+    background: white; font-size: 13px; cursor: pointer; transition: all .2s;
+    font-family: inherit; text-align: center;
+  }
+  .creneau-btn:hover { border-color: #0A6EBD; color: #0A6EBD; }
+  .creneau-btn.selected { background: #0A6EBD; color: white; border-color: #0A6EBD; }
+  .step-indicator {
+    display: flex; align-items: center; gap: 0; margin-bottom: 28px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+    color: #9ca3af; font-weight: 500;
+  }
+  .step.active { color: #0A6EBD; }
+  .step.done { color: #10b981; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
+  }
+  .step-line { flex: 1; height: 2px; background: #e5e7eb; margin: 0 8px; max-width: 60px; }
+  .ai-suggestion-box {
+    background: linear-gradient(135deg, #ede9fe, #f3e8ff);
+    border: 1.5px solid #c4b5fd; border-radius: 12px;
+    padding: 16px; margin-top: 16px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- STEPS -->
+<div class="step-indicator">
+  <div class="step active" id="step1"><div class="step-num">1</div> Choisir un médecin</div>
+  <div class="step-line"></div>
+  <div class="step" id="step2"><div class="step-num">2</div> Choisir le créneau</div>
+  <div class="step-line"></div>
+  <div class="step" id="step3"><div class="step-num">3</div> Confirmer</div>
+</div>
+
+<form method="post" id="rdvForm">
+  {% csrf_token %}
+  <input type="hidden" name="medecin_id" id="medecinIdInput">
+
+  <div class="grid-2" style="gap:24px;">
+
+    <!-- COLONNE GAUCHE : MÉDECINS + CRENEAUX -->
+    <div>
+      <!-- LISTE MÉDECINS -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-user-md"></i> Choisir un médecin</div>
+        </div>
+        <div style="display:grid;gap:12px;">
+          {% for medecin in medecins %}
+          <div class="medecin-card {% if medecin_selectionne and medecin_selectionne.id == medecin.id %}selected{% endif %}"
+               onclick="selectMedecin({{ medecin.id }}, '{{ medecin.user.get_full_name }}', '{{ medecin.specialite }}')"
+               id="medecin-{{ medecin.id }}">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div class="medecin-avatar" style="margin-bottom:0;flex-shrink:0;">
+                {{ medecin.user.first_name|first|upper }}{{ medecin.user.last_name|first|upper }}
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:15px;">Dr. {{ medecin.user.get_full_name }}</div>
+                <div style="font-size:13px;color:#6b7280;">{{ medecin.specialite }}</div>
+                <div style="font-size:12px;color:#9ca3af;">{{ medecin.tarif_consultation|default:"5000" }} FCFA / consultation</div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div style="text-align:center;padding:30px;color:#9ca3af;">
+            <i class="fas fa-user-md" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4;"></i>
+            Aucun médecin disponible
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- CRENEAUX DISPONIBLES -->
+      <div class="card" id="creneauxSection" style="display:none;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-clock"></i> Créneaux disponibles</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sélectionner une date</label>
+          <input type="date" id="datePicker" class="form-control"
+            min="{{ today|date:'Y-m-d' }}"
+            onchange="loadCreneaux()">
+        </div>
+        <div id="creneauxLoader" style="text-align:center;padding:20px;display:none;">
+          <i class="fas fa-spinner fa-spin" style="color:#7c3aed;font-size:24px;"></i>
+        </div>
+        <div id="creneauxGrid" class="creneaux-grid"></div>
+        <input type="hidden" name="date_heure" id="dateHeureInput">
+
+        <!-- SUGGESTION IA -->
+        <div class="ai-suggestion-box" id="aiSuggestionBox" style="display:none;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:18px;">🤖</span>
+            <strong style="font-size:13px;color:#7c3aed;">Suggestion IA — Meilleurs créneaux pour vous</strong>
+          </div>
+          <div id="aiSuggestions"></div>
+          <input type="text" id="preferencesInput" class="form-control" style="margin-top:10px;font-size:13px;"
+            placeholder="Vos préférences (ex: matin, pas lundi...)">
+          <button type="button" onclick="getSuggestions()" class="btn btn-sm" style="margin-top:8px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;">
+            <i class="fas fa-magic"></i> Obtenir des suggestions
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLONNE DROITE : FORMULAIRE -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-clipboard-list"></i> Informations de la consultation</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Type de consultation</label>
+          <select name="type_rdv" class="form-control">
+            {% for value, label in type_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Motif de consultation *</label>
+          <textarea name="motif" class="form-control" rows="3"
+            placeholder="Décrivez la raison de votre visite..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Symptômes (optionnel)</label>
+          <textarea name="symptomes" class="form-control" rows="3"
+            placeholder="Listez vos symptômes pour aider le médecin à se préparer..."></textarea>
+        </div>
+
+        <!-- RÉCAP -->
+        <div id="recapSection" style="display:none;background:#e8f4fd;border-radius:10px;padding:14px;margin-bottom:18px;">
+          <div style="font-size:13px;font-weight:600;color:#0A6EBD;margin-bottom:8px;"><i class="fas fa-check-circle"></i> Récapitulatif</div>
+          <div style="font-size:13px;color:#4b5563;">
+            <div id="recapMedecin"></div>
+            <div id="recapDate"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;" id="submitBtn" disabled>
+          <i class="fas fa-calendar-check"></i> Confirmer le rendez-vous
+        </button>
+        <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:10px;">
+          Vous recevrez une confirmation dès que le médecin accepte votre demande.
+        </p>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedMedecinId = null;
+let selectedMedecinNom = '';
+
+// Présélection si médecin fourni
+{% if medecin_selectionne %}
+window.addEventListener('load', () => {
+  selectMedecin({{ medecin_selectionne.id }}, 'Dr. {{ medecin_selectionne.user.get_full_name }}', '{{ medecin_selectionne.specialite }}');
+});
+{% endif %}
+
+function selectMedecin(id, nom, specialite) {
+  // Reset
+  document.querySelectorAll('.medecin-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('medecin-' + id).classList.add('selected');
+
+  selectedMedecinId = id;
+  selectedMedecinNom = nom + ' — ' + specialite;
+  document.getElementById('medecinIdInput').value = id;
+  document.getElementById('creneauxSection').style.display = 'block';
+  document.getElementById('aiSuggestionBox').style.display = 'block';
+
+  // Set min date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('datePicker').min = today;
+
+  updateRecap();
+  updateSteps(2);
+}
+
+async function loadCreneaux() {
+  const date = document.getElementById('datePicker').value;
+  if (!date || !selectedMedecinId) return;
+
+  document.getElementById('creneauxLoader').style.display = 'block';
+  document.getElementById('creneauxGrid').innerHTML = '';
+
+  try {
+    const resp = await fetch(`/appointments/creneaux/${selectedMedecinId}/?date=${date}`);
+    const data = await resp.json();
+    document.getElementById('creneauxLoader').style.display = 'none';
+
+    const grid = document.getElementById('creneauxGrid');
+    if (data.creneaux && data.creneaux.length) {
+      data.creneaux.forEach(h => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'creneau-btn';
+        btn.textContent = h;
+        btn.onclick = () => selectCreneau(date, h, btn);
+        grid.appendChild(btn);
+      });
+    } else {
+      grid.innerHTML = '<p style="font-size:13px;color:#9ca3af;grid-column:1/-1;text-align:center;padding:20px;">Aucun créneau disponible ce jour</p>';
+    }
+  } catch(e) {
+    document.getElementById('creneauxLoader').style.display = 'none';
+    document.getElementById('creneauxGrid').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:10px;">Erreur de chargement</p>';
+  }
+}
+
+function selectCreneau(date, heure, btn) {
+  document.querySelectorAll('.creneau-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('dateHeureInput').value = `${date}T${heure}`;
+  document.getElementById('submitBtn').disabled = false;
+  updateRecap(date, heure);
+  updateSteps(3);
+}
+
+function updateRecap(date, heure) {
+  if (selectedMedecinNom) {
+    document.getElementById('recapSection').style.display = 'block';
+    document.getElementById('recapMedecin').innerHTML = `<i class="fas fa-user-md"></i> ${selectedMedecinNom}`;
+    if (date && heure) {
+      const d = new Date(`${date}T${heure}`);
+      document.getElementById('recapDate').innerHTML = `<i class="fas fa-calendar"></i> ${d.toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'})} à ${heure}`;
+    }
+  }
+}
+
+function updateSteps(current) {
+  for (let i = 1; i <= 3; i++) {
+    const s = document.getElementById('step' + i);
+    s.classList.remove('active', 'done');
+    if (i < current) s.classList.add('done');
+    else if (i === current) s.classList.add('active');
+  }
+}
+
+async function getSuggestions() {
+  if (!selectedMedecinId) return;
+  const prefs = document.getElementById('preferencesInput').value;
+  const container = document.getElementById('aiSuggestions');
+  container.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#7c3aed;"></i> Analyse en cours...';
+
+  try {
+    const resp = await fetch('/ai/creneaux/suggestion/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+      body: JSON.stringify({medecin_id: selectedMedecinId, preferences: prefs})
+    });
+    const data = await resp.json();
+    if (data.suggestions && data.suggestions.length) {
+      container.innerHTML = data.suggestions.map(s => `
+        <div style="background:white;border-radius:8px;padding:10px 12px;margin-bottom:6px;border:1px solid #c4b5fd;">
+          <strong style="font-size:13px;color:#7c3aed;">${s.date} à ${s.heure}</strong>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">${s.raison}</p>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p style="font-size:12px;color:#6b7280;">Aucune suggestion disponible.</p>';
+    }
+  } catch(e) {
+    container.innerHTML = '<p style="font-size:12px;color:#ef4444;">Erreur de connexion.</p>';
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Détail RDV{% endblock %}
+{% block page_title %}Détail du Rendez-vous{% endblock %}
+{% block page_subtitle %}#RDV{{ rdv.id }}{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+
+  <div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-info-circle"></i> Informations</div>
+        <span class="badge badge-{{ rdv.badge_class }}">{{ rdv.get_statut_display }}</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;gap:14px;align-items:center;padding:14px;background:#f9fafb;border-radius:10px;">
+          <div style="width:48px;height:48px;border-radius:12px;background:#e8f4fd;display:flex;align-items:center;justify-content:center;color:#0A6EBD;font-size:20px;"><i class="fas fa-calendar-alt"></i></div>
+          <div>
+            <div style="font-size:12px;color:#9ca3af;">Date et Heure</div>
+            <div style="font-weight:600;font-size:15px;">{{ rdv.date_heure|date:"l d MMMM Y" }}</div>
+            <div style="color:#0A6EBD;">{{ rdv.date_heure|date:"H:i" }} — durée {{ rdv.duree }} min</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;align-items:center;padding:14px;background:#f9fafb;border-radius:10px;">
+          <div style="width:48px;height:48px;border-radius:12px;background:#d1fae5;display:flex;align-items:center;justify-content:center;color:#065f46;font-size:20px;"><i class="fas fa-user-md"></i></div>
+          <div>
+            <div style="font-size:12px;color:#9ca3af;">Médecin</div>
+            <div style="font-weight:600;">Dr. {{ rdv.medecin.user.get_full_name }}</div>
+            <div style="color:#6b7280;font-size:13px;">{{ rdv.medecin.specialite }}</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;align-items:center;padding:14px;background:#f9fafb;border-radius:10px;">
+          <div style="width:48px;height:48px;border-radius:12px;background:#ede9fe;display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:20px;"><i class="fas fa-user"></i></div>
+          <div>
+            <div style="font-size:12px;color:#9ca3af;">Patient</div>
+            <div style="font-weight:600;">{{ rdv.patient.get_full_name }}</div>
+            <div style="color:#6b7280;font-size:13px;">{{ rdv.patient.telephone|default:"—" }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:8px;">Type</div>
+        <span class="badge badge-info">{{ rdv.get_type_rdv_display }}</span>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:6px;">Motif</div>
+        <p style="font-size:14px;color:#1f2937;background:#f9fafb;padding:12px;border-radius:8px;">{{ rdv.motif }}</p>
+      </div>
+
+      {% if rdv.symptomes %}
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:600;color:#4b5563;margin-bottom:6px;">Symptômes décrits</div>
+        <p style="font-size:14px;color:#1f2937;background:#f9fafb;padding:12px;border-radius:8px;">{{ rdv.symptomes }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if rdv.notes_medecin %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-notes-medical"></i> Notes du médecin</div>
+      <p style="font-size:14px;color:#1f2937;line-height:1.7;">{{ rdv.notes_medecin }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <!-- ACTIONS -->
+    {% if user.is_medecin or user.is_secretaire or user.is_admin_role %}
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-edit"></i> Gérer le rendez-vous</div>
+      <form method="post" action="{% url 'changer_statut' rdv.id %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Changer le statut</label>
+          <select name="statut" class="form-control">
+            <option value="en_attente" {% if rdv.statut == 'en_attente' %}selected{% endif %}>En attente</option>
+            <option value="confirme" {% if rdv.statut == 'confirme' %}selected{% endif %}>Confirmé</option>
+            <option value="termine" {% if rdv.statut == 'termine' %}selected{% endif %}>Terminé</option>
+            <option value="absent" {% if rdv.statut == 'absent' %}selected{% endif %}>Patient absent</option>
+            <option value="annule" {% if rdv.statut == 'annule' %}selected{% endif %}>Annulé</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes médicales (post-consultation)</label>
+          <textarea name="notes_medecin" class="form-control" rows="4"
+            placeholder="Notes de consultation, observations, prescription...">{{ rdv.notes_medecin }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if user.is_patient and rdv.statut in 'en_attente,confirme' %}
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title" style="margin-bottom:12px;"><i class="fas fa-times-circle"></i> Annuler le RDV</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">Si vous ne pouvez plus vous rendre à ce rendez-vous, veuillez l'annuler au moins 24h à l'avance.</p>
+      <a href="{% url 'annuler_rdv' rdv.id %}"
+         onclick="return confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')"
+         class="btn btn-danger" style="width:100%;justify-content:center;">
+        <i class="fas fa-times"></i> Annuler ce rendez-vous
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- INFOS CRÉÉES -->
+    <div class="card">
+      <div style="font-size:12px;color:#9ca3af;line-height:2;">
+        <div><i class="fas fa-plus-circle" style="width:16px;"></i> Créé le {{ rdv.cree_le|date:"d/m/Y à H:i" }}</div>
+        <div><i class="fas fa-edit" style="width:16px;"></i> Modifié le {{ rdv.modifie_le|date:"d/m/Y à H:i" }}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <a href="{% url 'liste_rdv' %}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

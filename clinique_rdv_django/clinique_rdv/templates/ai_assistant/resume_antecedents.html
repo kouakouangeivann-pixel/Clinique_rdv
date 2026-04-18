@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Résumé Dossier Patient IA{% endblock %}
+{% block page_title %}Résumé Dossier Patient{% endblock %}
+{% block page_subtitle %}Synthèse clinique générée par l'IA{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-file-medical-alt"></i> Sélectionner un patient</div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Patient</label>
+          <select name="patient_id" class="form-control">
+            <option value="">— Choisir un patient —</option>
+            {% for patient in patients %}
+            <option value="{{ patient.id }}" {% if patient_selectionne and patient_selectionne.id == patient.id %}selected{% endif %}>
+              {{ patient.get_full_name }} ({{ patient.username }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+          <i class="fas fa-magic"></i> Générer le résumé IA
+        </button>
+      </form>
+    </div>
+
+    {% if patient_selectionne %}
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title" style="margin-bottom:14px;"><i class="fas fa-user"></i> Fiche patient</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0A6EBD,#00C49A);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">
+          {{ patient_selectionne.first_name|first|upper }}{{ patient_selectionne.last_name|first|upper }}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:15px;">{{ patient_selectionne.get_full_name }}</div>
+          <div style="font-size:13px;color:#9ca3af;">{{ patient_selectionne.email }}</div>
+        </div>
+      </div>
+      {% if patient_selectionne.profil_patient %}
+      {% with p=patient_selectionne.profil_patient %}
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#4b5563;">
+        {% if p.date_naissance %}<div><i class="fas fa-birthday-cake" style="width:16px;color:#0A6EBD;"></i> {{ p.date_naissance|date:"d/m/Y" }}</div>{% endif %}
+        {% if p.groupe_sanguin %}<div><i class="fas fa-tint" style="width:16px;color:#ef4444;"></i> Groupe {{ p.groupe_sanguin }}</div>{% endif %}
+        {% if p.allergies %}<div><i class="fas fa-exclamation-triangle" style="width:16px;color:#f59e0b;"></i> Allergies: {{ p.allergies }}</div>{% endif %}
+      </div>
+      {% endwith %}
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    {% if resume %}
+    <div class="card" style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+        <div>
+          <div style="color:white;font-weight:700;font-size:15px;">Résumé clinique IA</div>
+          <div style="color:rgba(255,255,255,.5);font-size:12px;">Propulsé par Claude AI</div>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:18px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.8;white-space:pre-wrap;">{{ resume }}</div>
+      <div style="margin-top:14px;font-size:11px;color:rgba(255,255,255,.3);">
+        <i class="fas fa-shield-alt"></i> Ce résumé est généré par IA à titre d'aide à la décision. Il ne remplace pas l'évaluation clinique du médecin.
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:60px 20px;">
+      <div style="font-size:64px;margin-bottom:16px;">📋</div>
+      <h3 style="font-size:18px;font-weight:600;margin-bottom:8px;color:#1f2937;">Résumé clinique IA</h3>
+      <p style="color:#9ca3af;font-size:14px;max-width:320px;margin:0 auto;">
+        Sélectionnez un patient pour générer un résumé clinique structuré de ses antécédents et de son historique médical.
+      </p>
+      <div style="margin-top:24px;background:#f3e8ff;border-radius:12px;padding:16px;text-align:left;font-size:13px;color:#7c3aed;">
+        <strong>🤖 Ce que l'IA génère :</strong>
+        <ul style="margin-top:8px;padding-left:18px;line-height:2;">
+          <li>Synthèse des antécédents médicaux</li>
+          <li>Historique des consultations</li>
+          <li>Points d'attention cliniques</li>
+          <li>Recommandations pour la prochaine consultation</li>
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

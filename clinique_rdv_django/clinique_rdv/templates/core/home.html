@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinique Espoir — Gestion des Rendez-vous</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #0A6EBD; --accent: #00C49A; --dark: #0a1628;
+      --gray-100: #f3f4f6; --white: #ffffff;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--white); color: #1f2937; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      padding: 16px 60px; display: flex; justify-content: space-between; align-items: center;
+      background: rgba(10,22,40,.95); backdrop-filter: blur(10px);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Playfair Display', serif; font-size: 20px; color: white; font-weight: 700;
+    }
+    .nav-logo i { color: var(--accent); font-size: 24px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: rgba(255,255,255,.7); text-decoration: none; font-size: 14px; transition: color .2s; }
+    .nav-links a:hover { color: white; }
+    .btn-nav {
+      background: var(--accent); color: white; padding: 9px 22px; border-radius: 8px;
+      font-weight: 600; font-size: 14px; text-decoration: none; transition: all .2s;
+    }
+    .btn-nav:hover { background: #009b7a; transform: translateY(-1px); color: white; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center;
+      background: linear-gradient(135deg, #0a1628 0%, #0e2a52 50%, #0d3b6e 100%);
+      position: relative; overflow: hidden; padding: 100px 60px 60px;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -200px; right: -200px;
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,196,154,.12), transparent 70%);
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: -100px; left: -100px;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(10,110,189,.15), transparent 70%);
+    }
+    .hero-content { max-width: 600px; z-index: 1; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,196,154,.15); border: 1px solid rgba(0,196,154,.3);
+      color: var(--accent); padding: 6px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 58px; font-weight: 800; color: white; line-height: 1.1; margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p { font-size: 17px; color: rgba(255,255,255,.65); line-height: 1.7; margin-bottom: 36px; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-hero-primary {
+      background: var(--accent); color: white; padding: 14px 30px; border-radius: 10px;
+      font-weight: 600; font-size: 15px; text-decoration: none; transition: all .25s;
+      box-shadow: 0 6px 20px rgba(0,196,154,.4);
+    }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,196,154,.5); color: white; }
+    .btn-hero-secondary {
+      background: rgba(255,255,255,.1); color: white; padding: 14px 30px; border-radius: 10px;
+      font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid rgba(255,255,255,.2);
+      transition: all .25s;
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,.15); color: white; }
+
+    /* STATS BAR */
+    .stats-bar {
+      background: white; padding: 40px 60px;
+      display: flex; gap: 48px; justify-content: center; flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+    }
+    .stat-item { text-align: center; }
+    .stat-item strong { display: block; font-size: 36px; font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; }
+    .stat-item span { font-size: 13px; color: #9ca3af; }
+
+    /* FEATURES */
+    .features { padding: 80px 60px; background: #f9fafb; }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-header h2 { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700; color: #1f2937; margin-bottom: 12px; }
+    .section-header p { font-size: 16px; color: #6b7280; max-width: 500px; margin: 0 auto; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1100px; margin: 0 auto; }
+    .feature-card {
+      background: white; border-radius: 16px; padding: 28px;
+      border: 1px solid #e5e7eb; transition: all .25s;
+    }
+    .feature-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,.1); transform: translateY(-4px); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 12px; margin-bottom: 18px;
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .feature-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; color: #1f2937; }
+    .feature-card p { font-size: 14px; color: #6b7280; line-height: 1.6; }
+    .ai-tag {
+      display: inline-block; margin-top: 12px;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* DOCTORS */
+    .doctors { padding: 80px 60px; background: white; }
+    .doctors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }
+    .doctor-card {
+      border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; text-align: center; transition: all .25s;
+    }
+    .doctor-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-3px); }
+    .doctor-avatar {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 14px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700;
+    }
+    .doctor-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .doctor-card p { font-size: 13px; color: #6b7280; margin-bottom: 14px; }
+    .doctor-card a { background: var(--primary); color: white; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none; display: inline-block; }
+
+    /* FOOTER */
+    footer {
+      background: #0a1628; color: rgba(255,255,255,.5); text-align: center; padding: 24px;
+      font-size: 13px;
+    }
+    footer span { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><i class="fas fa-heartbeat"></i> Clinique Espoir</div>
+  <div class="nav-links">
+    <a href="#features">Fonctionnalités</a>
+    <a href="#medecins">Médecins</a>
+    <a href="{% url 'login' %}">Connexion</a>
+    <a href="{% url 'register' %}" class="btn-nav">Créer un compte</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><i class="fas fa-sparkles"></i> Système intelligent de gestion</div>
+    <h1>Vos rendez-vous médicaux, <span>simplifiés</span></h1>
+    <p>Clinique Espoir vous offre une plateforme moderne pour gérer vos consultations médicales, enrichie par l'intelligence artificielle pour une expérience patient optimale.</p>
+    <div class="hero-actions">
+      <a href="{% url 'register' %}" class="btn-hero-primary"><i class="fas fa-calendar-plus"></i> Prendre un RDV</a>
+      <a href="{% url 'login' %}" class="btn-hero-secondary"><i class="fas fa-sign-in-alt"></i> Se connecter</a>
+    </div>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat-item"><strong>4</strong><span>Rôles utilisateurs</span></div>
+  <div class="stat-item"><strong>3</strong><span>Modules IA intégrés</span></div>
+  <div class="stat-item"><strong>24/7</strong><span>Disponible en ligne</span></div>
+  <div class="stat-item"><strong>100%</strong><span>Sécurisé</span></div>
+</div>
+
+<section class="features" id="features">
+  <div class="section-header">
+    <h2>Fonctionnalités complètes</h2>
+    <p>Une solution tout-en-un pour la clinique et ses patients</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#dbeafe;color:#1e40af;"><i class="fas fa-calendar-alt"></i></div>
+      <h3>Gestion des RDV</h3>
+      <p>Prise, confirmation, modification et annulation de rendez-vous avec gestion des conflits en temps réel.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#d1fae5;color:#065f46;"><i class="fas fa-calendar-week"></i></div>
+      <h3>Agenda interactif</h3>
+      <p>Vue calendrier pour les médecins avec leurs rendez-vous organisés par jour, semaine ou mois.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-robot"></i></div>
+      <h3>MediBot — Chatbot IA</h3>
+      <p>Assistant intelligent disponible 24h/24 pour répondre aux questions des patients et les orienter.</p>
+      <span class="ai-tag">✦ Propulsé par Claude AI</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fef3c7;color:#92400e;"><i class="fas fa-stethoscope"></i></div>
+      <h3>Analyse de symptômes</h3>
+      <p>L'IA analyse les symptômes décrits et suggère la spécialité médicale appropriée et le niveau d'urgence.</p>
+      <span class="ai-tag">✦ Propulsé par Claude AI</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-file-medical-alt"></i></div>
+      <h3>Résumé de dossier IA</h3>
+      <p>Génération automatique d'un résumé clinique structuré des antécédents patient pour les médecins.</p>
+      <span class="ai-tag">✦ Propulsé par Claude AI</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#d1fae5;color:#065f46;"><i class="fas fa-chart-line"></i></div>
+      <h3>Statistiques & Rapports</h3>
+      <p>Tableaux de bord avec graphiques pour suivre l'activité, les consultations par médecin et par période.</p>
+    </div>
+  </div>
+</section>
+
+{% if medecins %}
+<section class="doctors" id="medecins">
+  <div class="section-header">
+    <h2>Notre équipe médicale</h2>
+    <p>Des professionnels de santé qualifiés à votre service</p>
+  </div>
+  <div class="doctors-grid">
+    {% for medecin in medecins %}
+    <div class="doctor-card">
+      <div class="doctor-avatar">{{ medecin.user.first_name|first|upper }}{{ medecin.user.last_name|first|upper }}</div>
+      <h3>Dr. {{ medecin.user.get_full_name }}</h3>
+      <p>{{ medecin.specialite }}</p>
+      <a href="{% url 'register' %}">Prendre RDV</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<footer>
+  <p>© 2025 Clinique Espoir — Application de gestion de rendez-vous | Développé avec <span>♥</span> pour la soutenance de fin de licence en Génie Logiciel</p>
+</footer>
+
+</body>
+</html>

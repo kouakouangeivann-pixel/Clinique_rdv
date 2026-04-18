@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}Statistiques{% endblock %}
+{% block page_title %}Statistiques{% endblock %}
+{% block page_subtitle %}Analyse de l'activité de la clinique{% endblock %}
+
+{% block content %}
+<!-- KPIs -->
+<div class="grid-4" style="margin-bottom:28px;">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-calendar-alt"></i></div>
+    <div><div class="stat-number">{{ total_rdvs }}</div><div class="stat-label">Total RDV</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div><div class="stat-number">{{ rdvs_confirmes }}</div><div class="stat-label">Confirmés</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+    <div><div class="stat-number">{{ rdvs_annules }}</div><div class="stat-label">Annulés</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-star"></i></div>
+    <div><div class="stat-number">{{ rdvs_termines }}</div><div class="stat-label">Terminés</div></div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:24px;">
+  <!-- RDV PAR MOIS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-line"></i> Évolution mensuelle</div>
+    </div>
+    <canvas id="chartMois" height="200"></canvas>
+  </div>
+
+  <!-- RDV PAR STATUT (Donut) -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-pie"></i> Répartition par statut</div>
+    </div>
+    <div style="max-width:300px;margin:0 auto;">
+      <canvas id="chartStatut" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- RDV PAR TYPE -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-chart-bar"></i> RDV par type</div>
+    </div>
+    <canvas id="chartType" height="200"></canvas>
+  </div>
+
+  <!-- TOP MÉDECINS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-trophy"></i> Top médecins</div>
+    </div>
+    {% for m in top_medecins %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0A6EBD,#00C49A);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;flex-shrink:0;">
+        {{ forloop.counter }}
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:14px;">Dr. {{ m.medecin__user__first_name }} {{ m.medecin__user__last_name }}</div>
+        <div style="font-size:12px;color:#9ca3af;">{{ m.medecin__specialite }}</div>
+      </div>
+      <div style="font-size:20px;font-weight:700;color:#0A6EBD;">{{ m.total }}</div>
+    </div>
+    {% empty %}
+    <p style="text-align:center;color:#9ca3af;padding:20px;">Aucune donnée</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#6b7280';
+
+// Couleurs
+const colors = {
+  blue: '#0A6EBD', green: '#10b981', red: '#ef4444',
+  orange: '#f59e0b', purple: '#7c3aed', gray: '#9ca3af'
+};
+
+// Chart Mensuel
+const ctxMois = document.getElementById('chartMois').getContext('2d');
+new Chart(ctxMois, {
+  type: 'line',
+  data: {
+    labels: {{ par_mois.labels|safe }},
+    datasets: [{
+      label: 'Rendez-vous',
+      data: {{ par_mois.data|safe }},
+      borderColor: colors.blue,
+      backgroundColor: 'rgba(10,110,189,.08)',
+      tension: .4, fill: true, pointBackgroundColor: colors.blue,
+      pointRadius: 5, pointHoverRadius: 7,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { stepSize: 1 } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Chart Statut (Donut)
+const statutLabels = { 'en_attente': 'En attente', 'confirme': 'Confirmé', 'annule': 'Annulé', 'termine': 'Terminé', 'absent': 'Absent' };
+const statutColors = { 'en_attente': '#f59e0b', 'confirme': '#3b82f6', 'annule': '#ef4444', 'termine': '#10b981', 'absent': '#9ca3af' };
+const statutData = {{ par_statut|safe }};
+const ctxStatut = document.getElementById('chartStatut').getContext('2d');
+new Chart(ctxStatut, {
+  type: 'doughnut',
+  data: {
+    labels: statutData.map(d => statutLabels[d.statut] || d.statut),
+    datasets: [{
+      data: statutData.map(d => d.total),
+      backgroundColor: statutData.map(d => statutColors[d.statut] || '#9ca3af'),
+      borderWidth: 0, hoverOffset: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom' } },
+    cutout: '65%'
+  }
+});
+
+// Chart Type
+const typeLabels = { 'consultation': 'Consultation', 'suivi': 'Suivi', 'urgence': 'Urgence', 'controle': 'Contrôle' };
+const typeData = {{ par_type|safe }};
+const ctxType = document.getElementById('chartType').getContext('2d');
+new Chart(ctxType, {
+  type: 'bar',
+  data: {
+    labels: typeData.map(d => typeLabels[d.type_rdv] || d.type_rdv),
+    datasets: [{
+      label: 'Nombre de RDV',
+      data: typeData.map(d => d.total),
+      backgroundColor: [colors.blue, colors.green, colors.red, colors.orange],
+      borderRadius: 8, borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { stepSize: 1 } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

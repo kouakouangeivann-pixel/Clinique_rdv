@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Agenda{% endblock %}
+{% block page_title %}Agenda{% endblock %}
+{% block page_subtitle %}Dr. {{ medecin.user.get_full_name }} — {{ medecin.specialite }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.css" rel="stylesheet">
+<style>
+  .fc-button-primary { background: #0A6EBD !important; border-color: #0A6EBD !important; }
+  .fc-button-primary:hover { background: #084f8a !important; }
+  .fc-event { border-radius: 6px !important; border: none !important; padding: 2px 6px !important; font-size: 12px !important; }
+  .fc-daygrid-day:hover { background: #e8f4fd !important; cursor: pointer; }
+  .fc-today-button { background: #00C49A !important; border-color: #00C49A !important; }
+  #calendar { height: 600px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2" style="grid-template-columns:1fr 320px;">
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="fas fa-calendar-week"></i> Agenda interactif</div>
+      <div style="display:flex;gap:8px;">
+        <a href="{% url 'statistiques' %}" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar"></i></a>
+      </div>
+    </div>
+    <div id="calendar"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px;"><i class="fas fa-clock"></i> RDV du jour</div>
+      {% for rdv in rdvs %}
+      {% if rdv.date_heure|date:"Y-m-d" == today_str %}
+      <a href="{% url 'detail_rdv' rdv.id %}" style="text-decoration:none;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:#f9fafb;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:700;color:#0A6EBD;min-width:40px;">{{ rdv.date_heure|date:"H:i" }}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">{{ rdv.patient.get_full_name }}</div>
+            <div style="font-size:11px;color:#9ca3af;">{{ rdv.get_type_rdv_display }}</div>
+          </div>
+          <span class="badge badge-{{ rdv.badge_class }}" style="margin-left:auto;font-size:10px;">{{ rdv.get_statut_display }}</span>
+        </div>
+      </a>
+      {% endif %}
+      {% endfor %}
+
+      <div style="font-size:13px;color:#9ca3af;text-align:center;padding:20px;" id="noneToday" style="display:none;">
+        Aucun RDV aujourd'hui
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px;"><i class="fas fa-list"></i> Prochains RDV</div>
+      {% for rdv in rdvs|slice:":8" %}
+      <a href="{% url 'detail_rdv' rdv.id %}" style="text-decoration:none;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+          <div style="font-size:11px;color:#9ca3af;min-width:60px;">{{ rdv.date_heure|date:"d/m H:i" }}</div>
+          <div style="font-size:13px;font-weight:500;color:#1f2937;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ rdv.patient.get_full_name }}</div>
+          <span class="badge badge-{{ rdv.badge_class }}" style="font-size:10px;">{{ rdv.get_statut_display }}</span>
+        </div>
+      </a>
+      {% empty %}
+      <p style="text-align:center;color:#9ca3af;font-size:13px;padding:16px;">Aucun RDV à venir</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/locales/fr.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const events = {{ events_json|safe }};
+  const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+    locale: 'fr',
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    events: events,
+    eventClick: function(info) {
+      window.location.href = info.event.url;
+      info.jsEvent.preventDefault();
+    },
+    eventMouseEnter: function(info) {
+      info.el.title = `${info.event.title}\nStatut: ${info.event.extendedProps.statut}\nMotif: ${info.event.extendedProps.motif}`;
+    },
+    height: 600,
+    businessHours: {
+      daysOfWeek: [1,2,3,4,5],
+      startTime: '08:00',
+      endTime: '18:00',
+    },
+    nowIndicator: true,
+  });
+  calendar.render();
+});
+</script>
+{% endblock %}

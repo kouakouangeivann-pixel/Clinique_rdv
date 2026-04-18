@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Rendez-vous{% endblock %}
+{% block page_title %}Rendez-vous{% endblock %}
+{% block page_subtitle %}Gérer vos consultations{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><i class="fas fa-calendar-alt"></i> Liste des rendez-vous</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <!-- Filtre statut -->
+      <form method="get" style="display:flex;gap:8px;">
+        <select name="statut" class="form-control" style="width:auto;padding:8px 12px;font-size:13px;" onchange="this.form.submit()">
+          <option value="">Tous les statuts</option>
+          {% for val, label in statut_choices %}
+          <option value="{{ val }}" {% if statut_filter == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% if user.is_patient %}
+      <a href="{% url 'prendre_rdv' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nouveau RDV</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if rdvs %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date & Heure</th>
+          {% if user.is_patient %}<th>Médecin</th>{% else %}<th>Patient</th>{% endif %}
+          <th>Type</th>
+          <th>Motif</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rdv in rdvs %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ rdv.date_heure|date:"d/m/Y" }}</div>
+            <div style="font-size:12px;color:#9ca3af;"><i class="fas fa-clock"></i> {{ rdv.date_heure|date:"H:i" }}</div>
+          </td>
+          <td>
+            {% if user.is_patient %}
+            <div style="font-weight:500;">Dr. {{ rdv.medecin.user.get_full_name }}</div>
+            <div style="font-size:12px;color:#9ca3af;">{{ rdv.medecin.specialite }}</div>
+            {% else %}
+            <div style="font-weight:500;">{{ rdv.patient.get_full_name }}</div>
+            <div style="font-size:12px;color:#9ca3af;">{{ rdv.patient.telephone|default:"—" }}</div>
+            {% endif %}
+          </td>
+          <td><span style="font-size:13px;">{{ rdv.get_type_rdv_display }}</span></td>
+          <td>
+            <div style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;">{{ rdv.motif }}</div>
+          </td>
+          <td><span class="badge badge-{{ rdv.badge_class }}">{{ rdv.get_statut_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'detail_rdv' rdv.id %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-eye"></i>
+              </a>
+              {% if rdv.statut in 'en_attente,confirme' and not rdv.is_past %}
+              <a href="{% url 'annuler_rdv' rdv.id %}"
+                 onclick="return confirm('Confirmer l\'annulation ?')"
+                 class="btn btn-danger btn-sm">
+                <i class="fas fa-times"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;color:#9ca3af;">
+    <i class="fas fa-calendar-times" style="font-size:48px;display:block;margin-bottom:16px;opacity:.3;"></i>
+    <p style="font-size:16px;font-weight:500;margin-bottom:8px;">Aucun rendez-vous trouvé</p>
+    {% if user.is_patient %}
+    <a href="{% url 'prendre_rdv' %}" class="btn btn-primary" style="margin-top:14px;">
+      <i class="fas fa-calendar-plus"></i> Prendre un rendez-vous
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
